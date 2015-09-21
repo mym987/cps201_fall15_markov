@@ -4,7 +4,7 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 public class WordNgramTester {
-;
+
     private WordNgram[] myNgrams;
     
     @Before
