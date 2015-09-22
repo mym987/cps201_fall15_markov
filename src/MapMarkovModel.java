@@ -1,3 +1,7 @@
+import java.io.BufferedOutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
 import java.util.*;
 
 /**
@@ -7,10 +11,23 @@ import java.util.*;
  * time a new character is generated.
  */
 public class MapMarkovModel extends AbstractModel {
-    protected String myString;
+	
+	public static void main(String[] args){
+		MapMarkovModel myMark = new MapMarkovModel();
+		myMark.initialize(new Scanner("qwertyuiopasdfghjklzxcvbnm"));
+		myMark.process("1");
+		String output = myMark.makeNGram(1, 100);
+	}
+    
+	protected String myString;
     protected Random myRandom;
     public static final int DEFAULT_COUNT = 100; // default # random letters generated
-    public static int RANDOM_SEED = 1234; 
+    public static final int RANDOM_SEED = 1234; 
+    
+    private int myK;
+    private Map<String,List<String>> prevNode;
+    private Map<String,List<String>> nextNode;
+    private Map<String,Integer> distEOF;
     
     
     public MapMarkovModel() {
@@ -40,6 +57,13 @@ public class MapMarkovModel extends AbstractModel {
     protected int readChars(Scanner s) {
         myString = s.useDelimiter("\\Z").next();
         s.close();
+//        try {
+//			PrintWriter out = new PrintWriter(new BufferedOutputStream(new FileOutputStream("a.txt")));
+//			out.println(myString);
+//			out.close();
+//        } catch (FileNotFoundException e) {
+//			e.printStackTrace();
+//		}
         return myString.length();
     }
     
@@ -52,10 +76,7 @@ public class MapMarkovModel extends AbstractModel {
         String temp = (String) o;
         String[] nums = temp.split("\\s+");
         int k = Integer.parseInt(nums[0]);
-        int maxLetters = DEFAULT_COUNT;
-        if (nums.length > 1) {
-            maxLetters = Integer.parseInt(nums[1]);
-        }
+        int maxLetters = nums.length > 1?Integer.parseInt(nums[1]):DEFAULT_COUNT;
         
         double stime = System.currentTimeMillis();
         String text = makeNGram(k, maxLetters);
@@ -77,30 +98,106 @@ public class MapMarkovModel extends AbstractModel {
      *         representative characters that follow each k characters
      */
     protected String makeNGram(int k, int maxLetters) {
-        // Appending to StringBuilder is faster than appending to String
+    	if(myK!=k || prevNode == null) generateMap(k);
+        //Appending to StringBuilder is faster than appending to String
         StringBuilder build = new StringBuilder();
-        // Pick a random starting index
-        int start = myRandom.nextInt(myString.length() - k + 1);
-        String seed = myString.substring(start, start + k);
-        ArrayList<Character> list = new ArrayList<Character>();
+        //Pick a random starting index
+        String seed = "";
+        do{
+        	int start = myRandom.nextInt(myString.length() - k + 1);
+        	seed = myString.substring(start, start + k);
+        }while(distEOF.containsKey(seed)&&prevNode.size()>100);
+        
         // generate at most maxLetters characters
         for (int i = 0; i < maxLetters; i++) {
-            list.clear();
-            int pos = 0;
-            while ((pos = myString.indexOf(seed, pos)) != -1 && pos < myString.length()) {
-            	if (pos + k >= myString.length())
-            		list.add((char) 0);
-            	else
-            		list.add(myString.charAt(pos + k));
-                pos++;
-            }
-            int pick = myRandom.nextInt(list.size());
-            char ch = list.get(pick);
-            if (ch == 0) //end-of-file
-            	return build.toString();
+        	if(nextNode.get(seed).size()==0)return build.toString();
+        	String next = "";
+        	do{
+            	int pick = myRandom.nextInt(nextNode.get(seed).size());
+            	next = nextNode.get(seed).get(pick);
+            }while(distEOF.containsKey(next) && distEOF.get(next)<maxLetters-i-1&&prevNode.size()>100);
+        	
+        	char ch = next.charAt(k-1);
             build.append(ch);
             seed = seed.substring(1) + ch;
         }
         return build.toString();
     }
+    
+    private void generateMap(int k){
+    	prevNode = new HashMap<>();
+    	nextNode = new HashMap<>();
+    	distEOF = new HashMap<>();
+    	if(myString == null) return;
+    	
+    	putNode(myString.substring(0,k),null,myString.substring(1, k+1));
+    	for(int p=1;p< myString.length()-k;p++){
+    		String curr = myString.substring(p,p+k);
+    		String prev = myString.substring(p-1,p+k-1);
+    		String next = myString.substring(p+1,p+k+1);
+    		putNode(curr,prev,next);
+    	}
+    	putNode(myString.substring(myString.length()-k),myString.substring(myString.length()-k-1,myString.length()-1),null);
+    	
+    	String eofNode = null;
+    	for(String node:nextNode.keySet()){
+    		if(nextNode.get(node).isEmpty()){
+    			eofNode = node;
+    			break;
+    		}	
+    	}
+    	
+    	if(eofNode==null)return;
+    	String curr = eofNode;
+    	for(int i=0;;i++){
+    		if(nextNode.get(curr).size()>1)break;
+    		distEOF.put(curr, i);
+    		if(prevNode.get(curr).isEmpty())break;
+    		curr = prevNode.get(curr).get(0);
+    	}
+    	
+    }
+    
+    private boolean containsNode(String string){
+    	return prevNode.containsKey(string);
+    }
+    
+    private void putNode(String node, String prev, String next){
+    	if(!containsNode(node)){
+    		prevNode.put(node, new ArrayList<>());
+    		nextNode.put(node, new ArrayList<>());
+    	}
+    	if(prev!=null)prevNode.get(node).add(prev);
+    	if(next!=null)nextNode.get(node).add(next);
+    }
+    
+//    private class Ngram{
+//    	
+//    	List<Ngram> myPrev,myNext;
+//    	private String mySeed;
+//
+//    	public Ngram(String stream, int start, int n) {
+//    		mySeed = stream.substring(start, start+n);
+//    		myPrev = new ArrayList<>();
+//    		myNext = new ArrayList<>();
+//    	}
+//
+//    	@Override
+//    	public boolean equals(Object o) {
+//    		return mySeed.equals(o.toString());
+//    	}
+//    	
+//    	@Override
+//    	public int hashCode() {
+//    		return mySeed.hashCode();
+//    	}
+//    	
+//    	@Override
+//    	public String toString(){
+//    		return mySeed;
+//    	}
+//    }
 }
+
+
+

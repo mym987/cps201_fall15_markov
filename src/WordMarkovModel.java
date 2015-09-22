@@ -1,3 +1,9 @@
+import java.io.BufferedOutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.util.*;
 
 /**
@@ -104,12 +110,12 @@ public class WordMarkovModel extends AbstractModel {
         return build.toString();
     }
     
-    private class WordNgram{
+    private class Ngram{
     	
 
     	private String[] myWords;
 
-    	public WordNgram(String[] list, int start, int n) {
+    	public Ngram(String[] list, int start, int n) {
     		myWords = new String[n];
     		System.arraycopy(list, start, myWords, 0, n);
     	}
@@ -119,7 +125,7 @@ public class WordMarkovModel extends AbstractModel {
     		if(this == o) return true;
     		if(this.getClass()!=o.getClass())
     			return false;
-    		WordNgram wg = (WordNgram) o;
+    		Ngram wg = (Ngram) o;
     		for(int i = 0;i<myWords.length;i++){
     			if(!myWords[i].equals(wg.myWords[i]))
     				return false;

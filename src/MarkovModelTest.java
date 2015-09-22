@@ -6,11 +6,11 @@ import org.junit.Test;
 
 public class MarkovModelTest {
 	// TODO: change to MapMarkovModel
-	private MarkovModel myMark;
+	private MapMarkovModel myMark;
 
 	@Before
 	public void setUp() {
-		myMark = new MarkovModel();
+		myMark = new MapMarkovModel();
 	}
 
 	/**

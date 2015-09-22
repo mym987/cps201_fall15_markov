@@ -2,6 +2,7 @@ import javax.swing.*;
 import java.awt.BorderLayout;
 import java.awt.event.*;
 import java.util.*;
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -107,7 +108,7 @@ public class SimpleViewer extends JFrame implements IView {
 					ProgressMonitorInputStream pmis;
 					try {
 						pmis = getMonitorableStream(
-								new FileInputStream(file), "reading file " + file.getName());
+								new BufferedInputStream(new FileInputStream(file)), "reading file " + file.getName());
 					} catch (FileNotFoundException e) {
 						showError("error reading "+file.getName());
 						return;
@@ -129,7 +130,7 @@ public class SimpleViewer extends JFrame implements IView {
 					URL url = uri.toURL();
 					int size = url.openConnection().getContentLength();
 					ProgressMonitorInputStream pmis = 
-						getMonitorableStream(url.openStream(),"reading url: "+address);
+						getMonitorableStream(new BufferedInputStream(url.openStream()),"reading url: "+address);
 					pmis.getProgressMonitor().setMaximum(size);
 					doProcess(pmis, "url: "+url);
 				} catch (URISyntaxException e1) {

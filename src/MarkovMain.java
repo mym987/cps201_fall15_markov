@@ -1,3 +1,5 @@
+import java.util.*;
+
 /**
  * Main for Markov Text Generation Program
  * 
@@ -7,7 +9,7 @@
  */
 public class MarkovMain {
 	public static void main(String[] args) {
-		IModel model = new MarkovModel();
+		IModel model = new MapMarkovModel();
 		SimpleViewer view = new SimpleViewer("Compsci 201 Markovian Text" +
 				" Generation", "k count>");
 		view.setModel(model);
